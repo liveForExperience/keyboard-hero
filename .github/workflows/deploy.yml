@@ -36,11 +36,15 @@ jobs:
 
     - name: Deploy to GitHub Pages 🚀
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build
-        cname: # 如果有自定义域名，在这里添加
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy ${{ github.sha }}'
+        # cname: # 如果有自定义域名，在这里添加
 
     - name: Upload build artifacts 📁
       uses: actions/upload-artifact@v4

@@ -13,7 +13,7 @@ root.render(
 // PWA Service Worker 注册
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register(`${process.env.PUBLIC_URL || ''}/service-worker.js`)
       .then((registration) => {
         console.log('✅ Service Worker 注册成功:', registration.scope);
         

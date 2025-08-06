@@ -2,21 +2,24 @@ const CACHE_NAME = 'typing-trainer-v1.0.0';
 const STATIC_CACHE = 'typing-trainer-static-v1.0.0';
 const DYNAMIC_CACHE = 'typing-trainer-dynamic-v1.0.0';
 
+// 获取基础路径
+const BASE_PATH = self.location.pathname.replace('/service-worker.js', '') || '';
+
 // 需要缓存的静态资源
 const STATIC_ASSETS = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/static/js/bundle.js`,
+  `${BASE_PATH}/static/css/main.css`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-192x192.png`,
+  `${BASE_PATH}/icon-512x512.png`
 ];
 
 // 需要缓存的运行时资源
 const RUNTIME_CACHE = [
-  '/static/js/',
-  '/static/css/',
-  '/static/media/'
+  `${BASE_PATH}/static/js/`,
+  `${BASE_PATH}/static/css/`,
+  `${BASE_PATH}/static/media/`
 ];
 
 // 离线页面HTML
@@ -26,7 +29,7 @@ const OFFLINE_PAGE = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>离线模式 - 打字训练器</title>
+    <title>离线模式 - Keyboard Hero</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -174,7 +177,7 @@ async function handleRequest(request) {
     }
     
     // 3. 对于 API 请求
-    if (url.pathname.startsWith('/api/')) {
+    if (url.pathname.startsWith(`${BASE_PATH}/api/`)) {
       return await handleApiRequest(request);
     }
     
@@ -281,7 +284,15 @@ async function networkFirst(request) {
 // 处理离线请求
 async function handleOfflineRequest(request) {
   if (request.mode === 'navigate') {
-    return caches.match('/offline.html');
+    // 尝试返回缓存的主页面或创建离线页面
+    const cachedIndex = await caches.match(`${BASE_PATH}/`);
+    if (cachedIndex) {
+      return cachedIndex;
+    }
+    // 返回内联的离线页面
+    return new Response(OFFLINE_PAGE, {
+      headers: { 'Content-Type': 'text/html' }
+    });
   }
   
   // 对于其他类型的请求，返回缓存或错误响应

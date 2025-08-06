@@ -9,11 +9,6 @@ on:
 env:
   NODE_VERSION: '18'
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   # 代码质量检查
   quality-check:
@@ -79,7 +74,7 @@ jobs:
       run: |
         if [ -f "build/manifest.json" ]; then
           echo "✅ PWA manifest found"
-          cat build/manifest.json | jq '.' || echo "JSON parsing failed"
+          cat build/manifest.json | jq '.'
         else
           echo "❌ PWA manifest not found"
           exit 1
@@ -100,7 +95,7 @@ jobs:
         echo "📦 Build size analysis:"
         du -sh build/
         echo "📁 Main files:"
-        find build/static -name "*.js" -o -name "*.css" 2>/dev/null | head -10 | xargs ls -lh
+        find build/static -name "*.js" -o -name "*.css" | head -10 | xargs ls -lh
 
     - name: Upload build artifacts 📁
       uses: actions/upload-artifact@v4
@@ -109,23 +104,12 @@ jobs:
         path: build/
         retention-days: 7
 
-  # 部署到 GitHub Pages (使用新的官方方式)
+  # 部署到 GitHub Pages
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: [quality-check, build-and-test]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    # 添加明确的权限声明
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    
-    # 指定部署环境
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - name: Checkout code 🛎️
@@ -147,17 +131,15 @@ jobs:
         GENERATE_SOURCEMAP: false
         PUBLIC_URL: /keyboard-hero
 
-    - name: Setup Pages 📄
-      uses: actions/configure-pages@v4
-
-    - name: Upload to GitHub Pages 📤
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: ./build
-
     - name: Deploy to GitHub Pages 🚀
-      id: deployment
-      uses: actions/deploy-pages@v4
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy: ${{ github.event.head_commit.message }}'
 
     - name: Create deployment summary 📋
       run: |
@@ -167,5 +149,3 @@ jobs:
         echo "- **URL**: https://liveForExperience.github.io/keyboard-hero" >> $GITHUB_STEP_SUMMARY
         echo "- **Build Time**: $(date)" >> $GITHUB_STEP_SUMMARY
         echo "- **Build Size**: $(du -sh build/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
-
-# Lighthouse 性能检查已移除 - 如需要可以单独运行或在需要时重新添加

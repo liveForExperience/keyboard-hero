@@ -98,7 +98,7 @@ jobs:
         find build/static -name "*.js" -o -name "*.css" | head -10 | xargs ls -lh
 
     - name: Upload build artifacts 📁
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-${{ github.sha }}
         path: build/

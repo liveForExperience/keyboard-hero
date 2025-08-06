@@ -27,6 +27,16 @@ export default function TypingTrainer() {
   const [randomTextMode, setRandomTextMode] = useState('random_words');
   const [textLength, setTextLength] = useState(100);
   
+  // 竞速模式状态
+  const [isRaceMode, setIsRaceMode] = useState(false);
+  const [targetWPM, setTargetWPM] = useState(40);
+  const [timeLimit, setTimeLimit] = useState(60);
+  const [countdown, setCountdown] = useState(0);
+  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [raceTimer, setRaceTimer] = useState(null);
+  const [countdownTimer, setCountdownTimer] = useState(null);
+  
   const inputRef = useRef(null);
 
   // 清理会话数据
@@ -39,23 +49,36 @@ export default function TypingTrainer() {
     // 清理之前的会话
     clearSession();
     
+    // 清理竞速模式计时器
+    if (raceTimer) {
+      clearInterval(raceTimer);
+      setRaceTimer(null);
+    }
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+    }
+    setIsCountingDown(false);
+    setCountdown(0);
+    setRemainingTime(0);
+    
+    // 生成新的文本
     if (useRandomText) {
-      // 使用随机文本生成
       const randomText = generateRandomText(randomTextMode, textLength);
       setCurrentText(randomText);
     } else {
-      // 使用预设文本
       const texts = practiceTexts[level];
       const randomText = texts[Math.floor(Math.random() * texts.length)];
       setCurrentText(randomText);
     }
+    
     setUserInput('');
     setIsStarted(false);
     setIsCompleted(false);
     setErrors(0);
     setStartTime(0);
     setEndTime(0);
-  }, [level, useRandomText, randomTextMode, textLength, clearSession]);
+  }, [level, useRandomText, randomTextMode, textLength, clearSession, raceTimer, countdownTimer]);
 
   // 从localStorage加载数据
   useEffect(() => {
@@ -99,11 +122,97 @@ export default function TypingTrainer() {
     resetTest();
   }, [level, resetTest]);
 
+  // 根据难度获取默认WPM
+  const getDefaultWPM = useCallback((level) => {
+    const wpmMap = {
+      'beginner': 25,
+      'intermediate': 40,
+      'advanced': 60
+    };
+    return wpmMap[level] || 40;
+  }, []);
+
+  // 计算时间限制（基于WPM和字符数）
+  const calculateTimeLimit = useCallback((wpm, textLength) => {
+    // 假设平均每个单词5个字符，加上20%的缓冲时间
+    const wordsCount = textLength / 5;
+    const baseTime = (wordsCount / wpm) * 60; // 秒
+    return Math.ceil(baseTime * 1.2); // 加20%缓冲
+  }, []);
+
+  // 开始倒计时
+  const startCountdown = useCallback(() => {
+    setIsCountingDown(true);
+    setCountdown(3);
+    
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsCountingDown(false);
+          // 倒计时结束，开始正式测试
+          setIsStarted(true);
+          setStartTime(Date.now());
+          const calculatedTimeLimit = calculateTimeLimit(targetWPM, currentText.length);
+          setTimeLimit(calculatedTimeLimit);
+          setRemainingTime(calculatedTimeLimit);
+          inputRef.current?.focus();
+          
+          // 开始竞速计时器
+          const raceTimer = setInterval(() => {
+            setRemainingTime(prevTime => {
+              if (prevTime <= 1) {
+                clearInterval(raceTimer);
+                // 时间到，结束测试
+                completeTest(Date.now());
+                return 0;
+              }
+              return prevTime - 1;
+            });
+          }, 1000);
+          setRaceTimer(raceTimer);
+          
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    setCountdownTimer(timer);
+  }, [targetWPM, currentText.length, calculateTimeLimit, completeTest]);
+
+  // 开始测试（普通模式或竞速模式）
   const startTest = () => {
-    setIsStarted(true);
-    setStartTime(Date.now());
-    inputRef.current?.focus();
+    if (isRaceMode) {
+      startCountdown();
+    } else {
+      setIsStarted(true);
+      setStartTime(Date.now());
+      inputRef.current?.focus();
+    }
   };
+
+  // 切换竞速模式
+  const toggleRaceMode = useCallback(() => {
+    setIsRaceMode(!isRaceMode);
+    if (!isRaceMode) {
+      // 切换到竞速模式时，设置默认WPM
+      const defaultWPM = getDefaultWPM(level);
+      setTargetWPM(defaultWPM);
+    }
+    // 清理任何正在进行的计时器
+    if (raceTimer) {
+      clearInterval(raceTimer);
+      setRaceTimer(null);
+    }
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+    }
+    setIsCountingDown(false);
+    setCountdown(0);
+    setRemainingTime(0);
+  }, [isRaceMode, level, getDefaultWPM, raceTimer, countdownTimer]);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -134,11 +243,23 @@ export default function TypingTrainer() {
     }
   };
 
-  const completeTest = () => {
-    const endTime = Date.now();
+  const completeTest = useCallback((customEndTime = null) => {
+    const endTime = customEndTime || Date.now();
     setIsCompleted(true);
     setIsStarted(false);
     setEndTime(endTime);
+    
+    // 清理竞速模式计时器
+    if (raceTimer) {
+      clearInterval(raceTimer);
+      setRaceTimer(null);
+    }
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+    }
+    setIsCountingDown(false);
+    setRemainingTime(0);
     
     const wpm = calculateWPM(startTime, endTime, currentText.length);
     const accuracy = calculateAccuracy(currentText.length, errors);
@@ -177,7 +298,7 @@ export default function TypingTrainer() {
     }, 5000); // 5秒后清理
     
     setShowStats(true);
-  };
+  }, [raceTimer, countdownTimer, startTime, currentText.length, errors, bestWPM, streak, totalTests]);
 
   // 保存当前会话状态到localStorage
   const saveCurrentSession = useCallback((currentInput, currentErrors, isActive) => {
@@ -276,10 +397,102 @@ export default function TypingTrainer() {
               ref={inputRef}
               value={userInput}
               onChange={handleInputChange}
-              disabled={isCompleted}
-              placeholder={isStarted ? '' : '点击开始打字...'}
+              disabled={isCompleted || isCountingDown}
+              placeholder={isCountingDown ? `倒计时: ${countdown}` : (isStarted ? '' : '点击开始打字...')}
               className="w-full h-20 border-2 border-gray-200 rounded-xl p-4 text-lg font-mono outline-none resize-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
+            
+            {/* 主操作按钮 - 移至输入框下方 */}
+            <div className="flex justify-center items-center gap-3 mt-4">
+              {/* 开始按钮 */}
+              {!isStarted && !isCompleted && !isCountingDown && (
+                <button
+                  onClick={startTest}
+                  disabled={isGeneratingText}
+                  className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="开始练习"
+                >
+                  {isGeneratingText ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <span className="text-xl">▶️</span>
+                  )}
+                </button>
+              )}
+              
+              {/* 重新生成按钮 */}
+              <button
+                onClick={() => {
+                  if (useRandomText) {
+                    handleGenerateRandomText(randomTextMode, textLength);
+                  } else {
+                    resetTest();
+                  }
+                }}
+                disabled={isGeneratingText || isCountingDown}
+                className="flex items-center justify-center w-12 h-12 border-2 border-green-500 text-green-500 rounded-full hover:bg-green-50 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="重新生成"
+              >
+                <span className="text-xl">🔄</span>
+              </button>
+              
+              {/* 竞速模式切换按钮 */}
+              <button
+                onClick={toggleRaceMode}
+                disabled={isStarted || isCountingDown}
+                className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isRaceMode
+                    ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg'
+                    : 'border-2 border-orange-500 text-orange-500 hover:bg-orange-50'
+                }`}
+                title={isRaceMode ? '退出竞速模式' : '开启竞速模式'}
+              >
+                <span className="text-xl">🏁</span>
+              </button>
+            </div>
+            
+            {/* 竞速模式设置 */}
+            {isRaceMode && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+                <div className="flex items-center justify-center gap-4 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-orange-700">目标 WPM:</span>
+                    <input
+                      type="number"
+                      value={targetWPM}
+                      onChange={(e) => setTargetWPM(parseInt(e.target.value) || 40)}
+                      min="10"
+                      max="200"
+                      disabled={isStarted || isCountingDown}
+                      className="w-20 px-2 py-1 border border-orange-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
+                    />
+                  </div>
+                  <div className="text-sm text-orange-600">
+                    预计时间: {Math.ceil(calculateTimeLimit(targetWPM, currentText.length))} 秒
+                  </div>
+                </div>
+                
+                {/* 竞速模式状态显示 */}
+                {isRaceMode && (isCountingDown || (isStarted && remainingTime > 0)) && (
+                  <div className="text-center">
+                    {isCountingDown ? (
+                      <div className="text-4xl font-bold text-red-600 animate-pulse">
+                        {countdown > 0 ? countdown : '开始!'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-4">
+                        <div className="text-2xl font-bold text-orange-600">
+                          ⏱️ {Math.floor(remainingTime / 60)}:{(remainingTime % 60).toString().padStart(2, '0')}
+                        </div>
+                        <div className="text-sm text-orange-500">
+                          目标: {targetWPM} WPM
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 文本模式切换和难度选择 - 移至输入框下方 */}
@@ -327,41 +540,7 @@ export default function TypingTrainer() {
               )}
             </div>
 
-            {/* 操作按钮 */}
-            <div className="flex justify-center gap-4 mt-2">
-              {!isStarted && !isCompleted && (
-                <button
-                  onClick={startTest}
-                  disabled={isGeneratingText}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGeneratingText ? (
-                    <>
-                      <div className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      ▶️ 开始练习
-                    </>
-                  )}
-                </button>
-              )}
-              
-              <button
-                onClick={() => {
-                  if (useRandomText) {
-                    handleGenerateRandomText(randomTextMode, textLength);
-                  } else {
-                    resetTest();
-                  }
-                }}
-                disabled={isGeneratingText}
-                className="px-8 py-3 border-2 border-green-500 text-green-500 rounded-xl font-medium text-lg hover:bg-green-50 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                🎲 重新生成
-              </button>
-            </div>
+
           </div>
         </div>
 

@@ -140,6 +140,64 @@ export default function TypingTrainer() {
     return Math.ceil(baseTime * 1.2); // 加20%缓冲
   }, []);
 
+  // 完成测试函数 - 需要在startCountdown之前定义
+  const completeTest = useCallback((customEndTime = null) => {
+    const endTime = customEndTime || Date.now();
+    setIsCompleted(true);
+    setIsStarted(false);
+    setEndTime(endTime);
+    
+    // 清理竞速模式计时器
+    if (raceTimer) {
+      clearInterval(raceTimer);
+      setRaceTimer(null);
+    }
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+    }
+    setIsCountingDown(false);
+    setRemainingTime(0);
+    
+    const wpm = calculateWPM(startTime, endTime, currentText.length);
+    const accuracy = calculateAccuracy(currentText.length, errors);
+    
+    // 更新统计
+    setTotalTests(prev => prev + 1);
+    if (wpm > bestWPM) {
+      setBestWPM(wpm);
+    }
+    
+    if (accuracy > 95) {
+      setStreak(prev => prev + 1);
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
+    } else {
+      setStreak(0);
+    }
+
+    // 保存到localStorage
+    localStorage.setItem('typingStats', JSON.stringify({
+      bestWPM: Math.max(bestWPM, wpm),
+      streak: accuracy > 95 ? streak + 1 : 0,
+      totalTests: totalTests + 1
+    }));
+    
+    // 标记会话为已完成并清理
+    const sessionData = {
+      isCompleted: true,
+      completedAt: Date.now()
+    };
+    localStorage.setItem('typingSession', JSON.stringify(sessionData));
+    
+    // 延迟清理会话数据
+    setTimeout(() => {
+      localStorage.removeItem('typingSession');
+    }, 5000); // 5秒后清理
+    
+    setShowStats(true);
+  }, [raceTimer, countdownTimer, startTime, currentText.length, errors, bestWPM, streak, totalTests]);
+
   // 开始倒计时
   const startCountdown = useCallback(() => {
     setIsCountingDown(true);
@@ -243,62 +301,7 @@ export default function TypingTrainer() {
     }
   };
 
-  const completeTest = useCallback((customEndTime = null) => {
-    const endTime = customEndTime || Date.now();
-    setIsCompleted(true);
-    setIsStarted(false);
-    setEndTime(endTime);
-    
-    // 清理竞速模式计时器
-    if (raceTimer) {
-      clearInterval(raceTimer);
-      setRaceTimer(null);
-    }
-    if (countdownTimer) {
-      clearInterval(countdownTimer);
-      setCountdownTimer(null);
-    }
-    setIsCountingDown(false);
-    setRemainingTime(0);
-    
-    const wpm = calculateWPM(startTime, endTime, currentText.length);
-    const accuracy = calculateAccuracy(currentText.length, errors);
-    
-    // 更新统计
-    setTotalTests(prev => prev + 1);
-    if (wpm > bestWPM) {
-      setBestWPM(wpm);
-    }
-    
-    if (accuracy > 95) {
-      setStreak(prev => prev + 1);
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3000);
-    } else {
-      setStreak(0);
-    }
 
-    // 保存到localStorage（实际项目中）
-    localStorage.setItem('typingStats', JSON.stringify({
-      bestWPM: Math.max(bestWPM, wpm),
-      streak: accuracy > 95 ? streak + 1 : 0,
-      totalTests: totalTests + 1
-    }));
-    
-    // 标记会话为已完成并清理
-    const sessionData = {
-      isCompleted: true,
-      completedAt: Date.now()
-    };
-    localStorage.setItem('typingSession', JSON.stringify(sessionData));
-    
-    // 延迟清理会话数据
-    setTimeout(() => {
-      localStorage.removeItem('typingSession');
-    }, 5000); // 5秒后清理
-    
-    setShowStats(true);
-  }, [raceTimer, countdownTimer, startTime, currentText.length, errors, bestWPM, streak, totalTests]);
 
   // 保存当前会话状态到localStorage
   const saveCurrentSession = useCallback((currentInput, currentErrors, isActive) => {

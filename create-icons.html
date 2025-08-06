@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PWA Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <script>
+        // 创建PWA图标的简单脚本
+        function createIcon(size, filename) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            // 创建渐变背景
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#3B82F6');
+            gradient.addColorStop(1, '#8B5CF6');
+            
+            // 绘制背景
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // 添加圆角效果
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            const radius = size * 0.2;
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fill();
+            
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // 绘制键盘图标
+            ctx.fillStyle = 'white';
+            ctx.font = `${size * 0.4}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⌨️', size / 2, size / 2);
+            
+            // 下载图标
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+        
+        // 创建所有尺寸的图标
+        const sizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+        
+        setTimeout(() => {
+            sizes.forEach(size => {
+                setTimeout(() => {
+                    createIcon(size, `icon-${size}x${size}.png`);
+                }, size); // 延迟避免同时下载
+            });
+        }, 1000);
+        
+        document.body.innerHTML = '<h1>PWA图标生成器</h1><p>正在生成图标文件...</p><p>请将下载的图标文件放入public文件夹中。</p>';
+    </script>
+</body>
+</html>

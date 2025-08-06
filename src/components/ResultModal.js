@@ -10,9 +10,13 @@ export default function ResultModal({ show, onClose, wpm, accuracy, time }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl p-8 max-w-md w-full animate-scale-in shadow-2xl">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-3">🎉</div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">练习完成！</h3>
-          <p className="text-gray-600">你的成绩</p>
+          <div className="text-5xl mb-3">{accuracy === 100 ? '🏆' : '🎉'}</div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">
+            {accuracy === 100 ? '完美！太棒了！' : '练习完成！'}
+          </h3>
+          <p className="text-gray-600">
+            {accuracy === 100 ? '你就是 Keyboard Hero！🎯' : '你的成绩'}
+          </p>
         </div>
         
         <div className="grid grid-cols-3 gap-4 mb-6 text-center">
@@ -36,7 +40,15 @@ export default function ResultModal({ show, onClose, wpm, accuracy, time }) {
           </span>
         </div>
         
-        {accuracy > 95 && (
+        {accuracy === 100 && (
+          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-300 rounded-xl p-4 mb-6 text-center animate-pulse">
+            <div className="text-2xl mb-2">🌟</div>
+            <span className="text-yellow-800 font-bold text-lg">完美表现！零错误完成！</span>
+            <div className="text-yellow-700 text-sm mt-1">你已经达到了 Keyboard Hero 的水准！</div>
+          </div>
+        )}
+        
+        {accuracy > 95 && accuracy < 100 && (
           <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-3 mb-6 text-center">
             <span className="text-yellow-700 font-medium">⭐ 优秀表现！准确率超过95%</span>
           </div>

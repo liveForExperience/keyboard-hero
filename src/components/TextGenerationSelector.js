@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TEXT_GENERATION_MODES, CHARACTER_COUNT_PRESETS } from '../utils/randomTextGenerator';
 
 export default function TextGenerationSelector({ 
@@ -14,12 +14,16 @@ export default function TextGenerationSelector({
 
   const handleModeChange = (mode) => {
     setSelectedMode(mode);
+    // 自动生成新文本
+    onGenerateText(mode, selectedLength);
   };
 
   const handleLengthChange = (length) => {
     setSelectedLength(length);
     setShowCustomInput(false);
     setCustomLength('');
+    // 自动生成新文本
+    onGenerateText(selectedMode, length);
   };
 
   const handleCustomLengthSubmit = () => {
@@ -28,12 +32,15 @@ export default function TextGenerationSelector({
       setSelectedLength(length);
       setShowCustomInput(false);
       setCustomLength('');
+      // 自动生成新文本
+      onGenerateText(selectedMode, length);
     }
   };
 
-  const handleGenerate = () => {
+  // 组件首次加载时自动生成文本
+  useEffect(() => {
     onGenerateText(selectedMode, selectedLength);
-  };
+  }, []); // 只在组件首次挂载时执行
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
@@ -136,26 +143,7 @@ export default function TextGenerationSelector({
         </div>
       </div>
 
-      {/* 生成按钮 */}
-      <div className="flex justify-center">
-        <button
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          {isGenerating ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>生成中...</span>
-            </>
-          ) : (
-            <>
-              <span>🎯</span>
-              <span>生成随机文本</span>
-            </>
-          )}
-        </button>
-      </div>
+
 
       {/* 使用提示 */}
       <div className="mt-4 text-center">

@@ -249,11 +249,8 @@ export default function TypingTrainer() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mb-2">
-            ⌨️ 打字训练器
+            ⌨️ Keyboard Hero
           </h1>
-          <p className="text-xl text-gray-600">
-            提升你的打字技能，成为键盘高手！
-          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -262,46 +259,7 @@ export default function TypingTrainer() {
           <StatsCard icon="🏆" value={streak} label="连胜记录" />
         </div>
 
-        {/* 文本模式切换 */}
-        <div className="flex justify-center mb-6">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-medium">文本模式:</span>
-              <button
-                onClick={toggleTextMode}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  !useRandomText
-                    ? 'bg-blue-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                📚 预设文本
-              </button>
-              <button
-                onClick={toggleTextMode}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  useRandomText
-                    ? 'bg-green-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                🎲 随机生成
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* 根据模式显示不同的选择器 */}
-        {!useRandomText ? (
-          <LevelSelector level={level} onLevelChange={setLevel} />
-        ) : (
-          <TextGenerationSelector
-            onGenerateText={handleGenerateRandomText}
-            currentMode={randomTextMode}
-            currentLength={textLength}
-            isGenerating={isGeneratingText}
-          />
-        )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           <div className="h-2 bg-gray-100">
@@ -324,43 +282,86 @@ export default function TypingTrainer() {
             />
           </div>
 
-          <div className="flex justify-center gap-4 p-6 pt-0">
-            {!isStarted && !isCompleted && (
+          {/* 文本模式切换和难度选择 - 移至输入框下方 */}
+          <div className="flex flex-col gap-4 p-6 pt-0">
+            {/* 文本模式切换 */}
+            <div className="flex justify-center">
+              <div className="bg-gray-50 rounded-2xl p-3 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-700 font-medium text-sm">文本模式:</span>
+                  <button
+                    onClick={toggleTextMode}
+                    className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+                      !useRandomText
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    📚 预设文本
+                  </button>
+                  <button
+                    onClick={toggleTextMode}
+                    className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+                      useRandomText
+                        ? 'bg-green-500 text-white shadow-md'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    🎲 随机生成
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 根据模式显示不同的选择器 */}
+            <div className="flex justify-center">
+              {!useRandomText ? (
+                <LevelSelector level={level} onLevelChange={setLevel} />
+              ) : (
+                <TextGenerationSelector
+                  onGenerateText={handleGenerateRandomText}
+                  currentMode={randomTextMode}
+                  currentLength={textLength}
+                  isGenerating={isGeneratingText}
+                />
+              )}
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex justify-center gap-4 mt-2">
+              {!isStarted && !isCompleted && (
+                <button
+                  onClick={startTest}
+                  disabled={isGeneratingText}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGeneratingText ? (
+                    <>
+                      <div className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      ▶️ 开始练习
+                    </>
+                  )}
+                </button>
+              )}
+              
               <button
-                onClick={startTest}
+                onClick={() => {
+                  if (useRandomText) {
+                    handleGenerateRandomText(randomTextMode, textLength);
+                  } else {
+                    resetTest();
+                  }
+                }}
                 disabled={isGeneratingText}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGeneratingText ? (
-                  <>
-                    <div className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    生成中...
-                  </>
-                ) : (
-                  <>
-                    ▶️ 开始练习
-                  </>
-                )}
-              </button>
-            )}
-            
-            <button
-              onClick={resetTest}
-              disabled={isGeneratingText}
-              className="px-8 py-3 border-2 border-blue-500 text-blue-500 rounded-xl font-medium text-lg hover:bg-blue-50 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              🔄 重新开始
-            </button>
-            
-            {useRandomText && (
-              <button
-                onClick={() => handleGenerateRandomText(randomTextMode, textLength)}
-                disabled={isGeneratingText || isStarted}
                 className="px-8 py-3 border-2 border-green-500 text-green-500 rounded-xl font-medium text-lg hover:bg-green-50 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 🎲 重新生成
               </button>
-            )}
+            </div>
           </div>
         </div>
 

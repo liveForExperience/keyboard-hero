@@ -1,7 +1,7 @@
 {
-  "short_name": "打字训练器",
-  "name": "青少年打字训练器 - 专业打字练习应用",
-  "description": "专为青少年设计的现代化打字练习应用，提供多难度等级训练，实时统计分析，助你成为键盘高手！",
+  "short_name": "Keyboard Hero",
+  "name": "Keyboard Hero",
+  "description": "打字练习应用，提供多难度等级训练，支持多条件随机生成联系文本，实时统计分析，助你成为键盘高手！",
   "icons": [
     {
       "src": "icon-16x16.svg",
@@ -64,8 +64,8 @@
       "purpose": "maskable any"
     }
   ],
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/keyboard-hero/",
+  "scope": "/keyboard-hero/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#3B82F6",
@@ -80,8 +80,8 @@
   "prefer_related_applications": false,
   "shortcuts": [
     {
-      "name": "开始练习",
-      "short_name": "练习",
+      "name": "Keyboard Hero",
+      "short_name": "Keyboard Hero",
       "description": "立即开始打字练习",
       "url": "/?action=start",
       "icons": [

@@ -1,7 +1,7 @@
 {
   "name": "keyboard-hero",
   "version": "1.0.0",
-  "description": "青少年打字训练器 - 简洁优雅的H5打字练习应用",
+  "description": "Keyboard Hero - Modern typing trainer PWA with random text generation and session persistence",
   "private": true,
   "homepage": "https://liveForExperience.github.io/keyboard-hero",
   "dependencies": {

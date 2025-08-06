@@ -1,0 +1,11 @@
+{
+  "files": {
+    "main.css": "/keyboard-hero/static/css/main.a5f209ae.css",
+    "main.js": "/keyboard-hero/static/js/main.3b64ea1a.js",
+    "index.html": "/keyboard-hero/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.a5f209ae.css",
+    "static/js/main.3b64ea1a.js"
+  ]
+}
